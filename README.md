@@ -2,27 +2,27 @@
 
 An AI-powered study assistant that:
 
-Ingests notes/PDFs
+-Ingests notes/PDFs
 
-Generates summaries
+-Generates summaries
 
-Answers questions using RAG
+-Answers questions using RAG
 
-Uses multi-agent workflow (Researcher → Summarizer → Answerer)
+-Uses multi-agent workflow (Researcher → Summarizer → Answerer)
 
-Fully deployable with FastAPI + Streamlit
+-Fully deployable with FastAPI + Streamlit
 
 🚀 Project Goals
 
-Build complete RAG system
+-Build complete RAG system
 
-Integrate LangGraph multi-agent flow
+-Integrate LangGraph multi-agent flow
 
-Deploy using Docker + Render
+-Deploy using Docker + Render
 
-Add monitoring + logs + API docs
+-Add monitoring + logs + API docs
 
-Create portfolio-ready project
+-Create portfolio-ready project
 
 📅 Day-by-Day Build Plan
 
