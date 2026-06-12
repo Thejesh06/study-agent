@@ -100,17 +100,10 @@ with chat_tab:
                         answer = data["answer"]
                         sources = data.get("sources", [])
                     else:
-                        try:
-                            detail = resp.json().get("detail", "Unknown error")
-                        except Exception:
-                            detail = f"HTTP {resp.status_code}"
-                        answer = f"Something went wrong: {detail}"
+                        answer = f"Error: {resp.json().get('detail', 'Unknown error')}"
                         sources = []
                 except requests.exceptions.ConnectionError:
                     answer = "Cannot connect to backend. Is the server running?"
-                    sources = []
-                except Exception as e:
-                    answer = f"Unexpected error: {str(e)}"
                     sources = []
 
             st.markdown(answer)
