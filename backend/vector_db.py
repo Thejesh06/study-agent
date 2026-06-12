@@ -73,12 +73,12 @@ def search_similar(
     doc_filter: Optional[str] = None,
 ) -> List[dict]:
     """Return top_k most similar chunks, optionally filtered by document."""
-    results = _get_client().search(
+    results = _get_client().query_points(
         collection_name=COLLECTION,
-        query_vector=query_embedding,
+        query=query_embedding,
         limit=top_k * 3 if doc_filter else top_k,
         with_payload=True,
-    )
+    ).points
 
     output = []
     for hit in results:
