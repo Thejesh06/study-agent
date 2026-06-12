@@ -9,5 +9,6 @@ requests
 torch
 sentence-transformers
 groq
+qdrant-client
 pypdf
 python-multipart
