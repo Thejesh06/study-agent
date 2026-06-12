@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #21262d;
+      --border:    #30363d;
+      --accent:    #7c3aed;
+      --accent-h:  #6d28d9;
+      --accent-g:  #a78bfa;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --success:   #3fb950;
+      --danger:    #f85149;
+      --user-msg:  #1d4ed8;
+      --radius:    12px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      gap: 24px;
+      overflow-y: auto;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent-g);
+      padding: 0 4px;
+    }
+    .logo span { font-size: 1.5rem; }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Upload box */
+    .upload-box {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .upload-box:hover { border-color: var(--accent); background: rgba(124,58,237,0.05); }
+    .upload-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+    .upload-box .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+    .upload-box p { font-size: 0.82rem; color: var(--muted); }
+    .upload-box .file-name { font-size: 0.8rem; color: var(--accent-g); margin-top: 6px; font-weight: 500; word-break: break-all; }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-h); transform: translateY(-1px); }
+    .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+    /* Select */
+    select {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* Toast */
+    .toast {
+      font-size: 0.8rem;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      display: none;
+    }
+    .toast.success { background: rgba(63,185,80,0.15); color: var(--success); border: 1px solid rgba(63,185,80,0.3); }
+    .toast.error   { background: rgba(248,81,73,0.15);  color: var(--danger);  border: 1px solid rgba(248,81,73,0.3); }
+    .toast.show    { display: block; }
+
+    .divider { border: none; border-top: 1px solid var(--border); }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent-g); border-bottom-color: var(--accent-g); }
+
+    .tab-pane { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+    .tab-pane.active { display: flex; }
+
+    /* ── Chat ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+    .empty-state .big-icon { font-size: 3rem; }
+    .empty-state p { font-size: 0.9rem; }
+
+    .message { display: flex; gap: 12px; max-width: 80%; }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
+    .message.assistant { align-self: flex-start; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .user .avatar    { background: var(--user-msg); }
+    .assistant .avatar { background: var(--accent); }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .user .bubble {
+      background: var(--user-msg);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .assistant .bubble {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+      white-space: pre-wrap;
+    }
+
+    /* Typing indicator */
+    .typing-indicator { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+    .typing-indicator span {
+      width: 8px; height: 8px;
+      background: var(--muted);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    /* Chat input */
+    .chat-input-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .chat-input-area textarea {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      resize: none;
+      outline: none;
+      min-height: 48px;
+      max-height: 140px;
+      line-height: 1.5;
+      transition: border-color 0.2s;
+    }
+    .chat-input-area textarea:focus { border-color: var(--accent); }
+    .chat-input-area textarea::placeholder { color: var(--muted); }
+    .send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent-h); transform: translateY(-1px); }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+
+    /* ── Quiz ── */
+    .quiz-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .quiz-header {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .quiz-header label { font-size: 0.85rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+    .quiz-header input[type=range] {
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex: 1;
+      min-width: 120px;
+    }
+    #qCount {
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .quiz-questions { display: flex; flex-direction: column; gap: 16px; }
+
+    .q-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .q-card.correct { border-color: var(--success); }
+    .q-card.wrong   { border-color: var(--danger); }
+
+    .q-text { font-size: 0.92rem; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+    .q-num {
+      display: inline-block;
+      background: rgba(124,58,237,0.2);
+      color: var(--accent-g);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 8px;
+    }
+
+    .options { display: flex; flex-direction: column; gap: 8px; }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 0.87rem;
+      transition: all 0.15s;
+      background: var(--surface);
+    }
+    .option:hover { border-color: var(--accent); background: rgba(124,58,237,0.05); }
+    .option input[type=radio] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .option.correct-opt { background: rgba(63,185,80,0.1); border-color: var(--success); color: var(--success); }
+    .option.wrong-opt   { background: rgba(248,81,73,0.1);  border-color: var(--danger);  color: var(--danger); text-decoration: line-through; }
+
+    .explanation {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(124,58,237,0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .score-banner {
+      background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(167,139,250,0.1));
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      text-align: center;
+    }
+    .score-banner .score-num { font-size: 2.5rem; font-weight: 700; color: var(--accent-g); }
+    .score-banner p { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+
+    .quiz-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .quiz-actions .btn { width: auto; padding: 10px 24px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="logo"><span>📚</span> Study Agent</div>
+
+  <div>
+    <p class="section-label">Upload Document</p>
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".pdf,.txt" onchange="onFileSelected(this)" />
+      <div class="upload-icon">📄</div>
+      <p>Click to upload PDF or TXT</p>
+      <div class="file-name" id="fileName"></div>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-primary" id="uploadBtn" onclick="uploadFile()" disabled>Upload &amp; Start Chatting</button>
+    </div>
+    <div class="toast" id="uploadToast"></div>
+  </div>
+
+  <hr class="divider" />
+
+  <div>
+    <p class="section-label">Active Document</p>
+    <select id="docSelect" onchange="onDocChange()">
+      <option value="">All Documents</option>
+    </select>
+  </div>
+
+  <hr class="divider" />
+
+  <button class="btn btn-ghost" onclick="clearChat()">🗑 Clear Chat</button>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('chat', this)">💬 Chat</button>
+    <button class="tab"        onclick="switchTab('quiz', this)">🧠 Quiz</button>
+  </div>
+
+  <!-- Chat tab -->
+  <div class="tab-pane active" id="tab-chat">
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="big-icon">💬</div>
+        <p>Upload a document and start asking questions</p>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chatInput" placeholder="Ask a question about your document..."
+        rows="1" onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- Quiz tab -->
+  <div class="tab-pane" id="tab-quiz">
+    <div class="quiz-pane">
+      <div class="quiz-header">
+        <label>Questions:</label>
+        <input type="range" min="3" max="10" value="5" id="numQ" oninput="document.getElementById('qCount').textContent=this.value" />
+        <span id="qCount">5</span>
+        <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="generateQuiz()">Generate Quiz</button>
+      </div>
+      <div id="quizBody"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = 'https://study-agent-backend-5o1i.onrender.com/api';
+  let history = [];
+  let docFilter = null;
+  let selectedFile = null;
+  let quizData = [];
+  let quizSubmitted = false;
+
+  // ── Init ──
+  window.onload = () => { loadDocuments(); };
+
+  async function loadDocuments() {
+    try {
+      const res = await fetch(`${API}/documents`);
+      const data = await res.json();
+      const sel = document.getElementById('docSelect');
+      sel.innerHTML = '<option value="">All Documents</option>';
+      data.documents.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d; opt.textContent = d;
+        sel.appendChild(opt);
+      });
+    } catch(e) {}
+  }
+
+  function onDocChange() {
+    docFilter = document.getElementById('docSelect').value || null;
+  }
+
+  // ── Upload ──
+  function onFileSelected(input) {
+    selectedFile = input.files[0];
+    document.getElementById('fileName').textContent = selectedFile ? selectedFile.name : '';
+    document.getElementById('uploadBtn').disabled = !selectedFile;
+  }
+
+  async function uploadFile() {
+    if (!selectedFile) return;
+    const btn = document.getElementById('uploadBtn');
+    const toast = document.getElementById('uploadToast');
+    btn.disabled = true;
+    btn.textContent = 'Indexing…';
+    toast.className = 'toast';
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+
+    try {
+      const res = await fetch(`${API}/upload`, { method: 'POST', body: form });
+      const data = await res.json();
+      if (res.ok) {
+        toast.textContent = `✓ Indexed ${data.filename} — ${data.chunks_stored} chunks`;
+        toast.className = 'toast success show';
+        await loadDocuments();
+        // Auto-select uploaded doc
+        document.getElementById('docSelect').value = data.filename.replace(/ /g,'_');
+        docFilter = document.getElementById('docSelect').value || null;
+      } else {
+        toast.textContent = `✗ ${data.detail || 'Upload failed'}`;
+        toast.className = 'toast error show';
+      }
+    } catch(e) {
+      toast.textContent = '✗ Cannot connect to backend';
+      toast.className = 'toast error show';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Upload & Start Chatting';
+    setTimeout(() => toast.className = 'toast', 4000);
+  }
+
+  // ── Chat ──
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`tab-${name}`).classList.add('active');
+  }
+
+  function clearChat() {
+    history = [];
+    const box = document.getElementById('messages');
+    box.innerHTML = `<div class="empty-state" id="emptyState"><div class="big-icon">💬</div><p>Upload a document and start asking questions</p></div>`;
+  }
+
+  function appendMessage(role, content) {
+    const box = document.getElementById('messages');
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+
+    const wrap = document.createElement('div');
+    wrap.className = `message ${role}`;
+    wrap.innerHTML = `
+      <div class="avatar">${role === 'user' ? '🧑' : '🤖'}</div>
+      <div class="bubble">${escapeHtml(content)}</div>`;
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+    return wrap;
+  }
+
+  function appendTyping() {
+    const box = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = 'message assistant';
+    wrap.id = 'typing';
+    wrap.innerHTML = `<div class="avatar">🤖</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+    box.appendChild(wrap);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  }
+
+  function onKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const question = input.value.trim();
+    if (!question) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('sendBtn').disabled = true;
+
+    appendMessage('user', question);
+    appendTyping();
+
+    history.push({ role: 'user', content: question });
+
+    try {
+      const res = await fetch(`${API}/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, history: history.slice(0,-1), doc_filter: docFilter, k: 5 })
+      });
+      const data = await res.json();
+      document.getElementById('typing')?.remove();
+
+      const answer = res.ok ? data.answer : (data.detail || 'Something went wrong');
+      appendMessage('assistant', answer);
+      history.push({ role: 'assistant', content: answer });
+      if (history.length > 12) history = history.slice(-12);
+    } catch(e) {
+      document.getElementById('typing')?.remove();
+      appendMessage('assistant', 'Cannot connect to backend. Is the server running?');
+    }
+
+    document.getElementById('sendBtn').disabled = false;
+  }
+
+  // ── Quiz ──
+  async function generateQuiz() {
+    const num = parseInt(document.getElementById('numQ').value);
+    const body = document.getElementById('quizBody');
+    body.innerHTML = `<div class="message assistant"><div class="avatar">🤖</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div></div>`;
+
+    try {
+      const res = await fetch(`${API}/quiz`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doc_filter: docFilter, num_questions: num })
+      });
+      const data = await res.json();
+      if (!res.ok) { body.innerHTML = `<p style="color:var(--danger)">${data.detail || 'Quiz generation failed'}</p>`; return; }
+      quizData = data.questions;
+      quizSubmitted = false;
+      renderQuiz();
+    } catch(e) {
+      body.innerHTML = `<p style="color:var(--danger)">Cannot connect to backend.</p>`;
+    }
+  }
+
+  function renderQuiz() {
+    const body = document.getElementById('quizBody');
+    if (!quizData.length) return;
+
+    let html = '<div class="quiz-questions">';
+    quizData.forEach((q, i) => {
+      html += `<div class="q-card" id="qcard-${i}">
+        <div class="q-text"><span class="q-num">Q${i+1}</span>${escapeHtml(q.question)}</div>
+        <div class="options">`;
+      Object.entries(q.options).forEach(([k, v]) => {
+        html += `<label class="option" id="opt-${i}-${k}">
+          <input type="radio" name="q${i}" value="${k}" ${quizSubmitted ? 'disabled' : ''} />
+          <span><strong>${k}.</strong> ${escapeHtml(v)}</span>
+        </label>`;
+      });
+      html += `</div>`;
+      if (quizSubmitted) {
+        html += `<div class="explanation">💡 ${escapeHtml(q.explanation || '')}</div>`;
+      }
+      html += `</div>`;
+    });
+    html += '</div>';
+
+    if (!quizSubmitted) {
+      html += `<div class="quiz-actions"><button class="btn btn-primary" onclick="submitQuiz()">Submit Answers</button></div>`;
+    }
+
+    body.innerHTML = html;
+
+    if (quizSubmitted) applyResults();
+  }
+
+  function submitQuiz() {
+    quizSubmitted = true;
+    let correct = 0;
+    quizData.forEach((q, i) => {
+      const sel = document.querySelector(`input[name="q${i}"]:checked`);
+      const chosen = sel ? sel.value : null;
+      const card = document.getElementById(`qcard-${i}`);
+
+      Object.keys(q.options).forEach(k => {
+        const opt = document.getElementById(`opt-${i}-${k}`);
+        if (k === q.answer) { opt.classList.add('correct-opt'); }
+        else if (k === chosen && k !== q.answer) { opt.classList.add('wrong-opt'); }
+      });
+
+      if (chosen === q.answer) { correct++; card.classList.add('correct'); }
+      else { card.classList.add('wrong'); }
+
+      // Add explanation
+      const expDiv = document.createElement('div');
+      expDiv.className = 'explanation';
+      expDiv.textContent = `💡 ${q.explanation || ''}`;
+      card.appendChild(expDiv);
+
+      // Disable radios
+      card.querySelectorAll('input[type=radio]').forEach(r => r.disabled = true);
+    });
+
+    const pct = Math.round(correct / quizData.length * 100);
+    const emoji = pct === 100 ? '🏆' : pct >= 70 ? '👍' : '📖';
+    const msg   = pct === 100 ? 'Perfect score!' : pct >= 70 ? 'Good job!' : 'Keep studying!';
+
+    const banner = document.createElement('div');
+    banner.className = 'score-banner';
+    banner.innerHTML = `<div class="score-num">${emoji} ${correct}/${quizData.length}</div><p>${msg} — ${pct}%</p>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'quiz-actions';
+    actions.style.marginTop = '8px';
+    actions.innerHTML = `<button class="btn btn-primary" onclick="generateQuiz()">Try Again</button>`;
+
+    const body = document.getElementById('quizBody');
+    body.appendChild(banner);
+    body.appendChild(actions);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function applyResults() {
+    quizData.forEach((q, i) => {
+      Object.keys(q.options).forEach(k => {
+        const opt = document.getElementById(`opt-${i}-${k}`);
+        if (k === q.answer) opt.classList.add('correct-opt');
+      });
+    });
+  }
+</script>
+</body>
+</html>
