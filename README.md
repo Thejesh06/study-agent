@@ -2,7 +2,9 @@
 
 An AI study assistant that lets you upload PDF or text documents, ask questions about them, and auto-generate quizzes to test your understanding — all powered by RAG (Retrieval-Augmented Generation).
 
-> Built with FastAPI · Streamlit · Groq (LLaMA 3.3 70B) · Sentence Transformers
+> Built with FastAPI · Vanilla JavaScript · Groq (LLaMA 3.3 70B) · Sentence Transformers
+
+**Live Demo:** [thejesh06.github.io/study-agent](https://thejesh06.github.io/study-agent) · **API:** [study-agent-backend-5o1i.onrender.com](https://study-agent-backend-5o1i.onrender.com)
 
 ---
 
@@ -11,7 +13,7 @@ An AI study assistant that lets you upload PDF or text documents, ask questions 
 - **Document Q&A** — Upload any PDF or `.txt` file and ask questions in natural language. Answers are grounded in your document and supplemented by the LLM's own knowledge.
 - **Conversation Memory** — Follow-up questions work naturally; the assistant remembers the last 3 exchanges.
 - **Multi-document Support** — Upload multiple documents and switch between them using the document selector. Queries stay scoped to the selected document.
-- **Quiz Generator** — Auto-generate 3–10 multiple choice questions from any uploaded document. Instant scoring with explanations after submission.
+- **Quiz Generator** — Auto-generate 3–10 multiple choice questions from any uploaded document. Instant scoring with correct/wrong highlighting and explanations.
 - **Persistent Storage** — Uploaded documents are indexed and saved to disk — they survive server restarts.
 
 ---
@@ -44,7 +46,7 @@ PDF / TXT
 | Layer | Technology |
 |---|---|
 | Backend | FastAPI + Uvicorn |
-| Frontend | Streamlit |
+| Frontend | Vanilla JavaScript + CSS (GitHub Pages) |
 | LLM | Groq API (LLaMA 3.3 70B Versatile) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (local, no API needed) |
 | PDF Parsing | pypdf |
@@ -64,8 +66,8 @@ study-agent/
 │   ├── chunker.py      # Text splitting with overlap
 │   └── routes/
 │       └── api.py      # All API endpoints
-├── frontend/
-│   └── app.py          # Streamlit chat + quiz UI
+├── docs/
+│   └── index.html      # Frontend — HTML/CSS/JS (served via GitHub Pages)
 ├── requirements.txt
 └── .env                # GROQ_API_KEY goes here
 ```
@@ -77,7 +79,7 @@ study-agent/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/study-agent.git
+git clone https://github.com/Thejesh06/study-agent.git
 cd study-agent
 ```
 
@@ -113,21 +115,22 @@ Get a free API key at [console.groq.com](https://console.groq.com).
 
 ## Running Locally
 
-Open **two terminals** inside the `study-agent/` folder.
-
-**Terminal 1 — Backend:**
+**Terminal — Backend:**
 ```bash
 venv\Scripts\activate
 uvicorn backend.app:app --reload
 ```
 
-**Terminal 2 — Frontend:**
-```bash
-venv\Scripts\activate
-streamlit run frontend/app.py
-```
+Then open `docs/index.html` directly in your browser — it talks to `localhost:8000` by default.
 
-Then open **http://localhost:8501** in your browser.
+---
+
+## Deployment
+
+| Service | Purpose |
+|---|---|
+| [Render](https://render.com) | Hosts the FastAPI backend (free tier) |
+| [GitHub Pages](https://pages.github.com) | Hosts the HTML/JS frontend (free, from `/docs` folder) |
 
 ---
 
@@ -144,7 +147,7 @@ Then open **http://localhost:8501** in your browser.
 ### Example — Query
 
 ```bash
-curl -X POST http://localhost:8000/api/query \
+curl -X POST https://study-agent-backend-5o1i.onrender.com/api/query \
   -H "Content-Type: application/json" \
   -d '{"question": "What is photosynthesis?", "doc_filter": "biology_notes.pdf"}'
 ```
@@ -152,7 +155,7 @@ curl -X POST http://localhost:8000/api/query \
 ### Example — Quiz
 
 ```bash
-curl -X POST http://localhost:8000/api/quiz \
+curl -X POST https://study-agent-backend-5o1i.onrender.com/api/quiz \
   -H "Content-Type: application/json" \
   -d '{"doc_filter": "biology_notes.pdf", "num_questions": 5}'
 ```
@@ -161,11 +164,11 @@ curl -X POST http://localhost:8000/api/quiz \
 
 ## Usage
 
-1. **Upload a document** — Use the sidebar to upload a PDF or TXT file and click "Upload & Index"
+1. **Upload a document** — Use the sidebar to upload a PDF or TXT file and click "Upload & Start Chatting"
 2. **Select the document** — Pick it from the "Active Document" dropdown to restrict search to that file
 3. **Chat** — Type questions in the Chat tab; the assistant answers from your document
 4. **Quiz** — Switch to the Quiz tab, set the number of questions, and click "Generate Quiz"
-5. **Score** — Submit your answers to see which were correct with explanations
+5. **Score** — Submit your answers to see correct/wrong answers with explanations
 
 ---
 
