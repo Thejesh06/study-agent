@@ -20,8 +20,8 @@ with st.sidebar:
     uploaded = st.file_uploader("Choose a PDF or TXT file", type=["pdf", "txt"])
 
     if uploaded:
-        if st.button("Upload & Index", type="primary"):
-            with st.spinner("Indexing..."):
+        if st.button("Upload & Start Chatting", type="primary"):
+            with st.spinner("Uploading and indexing your document — this may take a moment..."):
                 try:
                     resp = requests.post(
                         f"{API}/upload",
@@ -56,7 +56,6 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-    st.caption("Backend: `uvicorn backend.app:app --reload`")
 
 
 # --- Tabs ---
