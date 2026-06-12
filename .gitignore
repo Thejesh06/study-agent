@@ -1,5 +1,9 @@
 venv/
+.env
+vector_store.json
+chroma_store/
 __pycache__/
 *.pyc
-.env
+*.pyo
 .DS_Store
+.streamlit/secrets.toml

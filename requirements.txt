@@ -1,9 +1,10 @@
 fastapi
 uvicorn
-langchain
 python-dotenv
-openai
-chromadb
 pydantic
 streamlit
 requests
+sentence-transformers
+groq
+pypdf
+python-multipart
