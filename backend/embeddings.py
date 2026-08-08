@@ -1,19 +1,19 @@
 # backend/embeddings.py
 
-from sentence_transformers import SentenceTransformer
+from fastembed import TextEmbedding
 
 model = None
 
 def get_model():
     global model
     if model is None:
-        model = SentenceTransformer("all-MiniLM-L6-v2")
+        model = TextEmbedding("BAAI/bge-small-en-v1.5")
     return model
 
 def embed_text(text: str):
     try:
-        embedding = get_model().encode(text).tolist()
-        return embedding
+        embeddings = list(get_model().embed([text]))
+        return embeddings[0].tolist()
     except Exception as e:
         print("Embedding Error:", repr(e))
         return None

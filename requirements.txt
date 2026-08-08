@@ -1,13 +1,10 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-
 fastapi
 uvicorn
 python-dotenv
 pydantic
 streamlit
 requests
-torch
-sentence-transformers
+fastembed
 groq
 pypdf
 python-multipart
