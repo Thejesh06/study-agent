@@ -2,15 +2,17 @@
 
 from sentence_transformers import SentenceTransformer
 
-# Load embedding model once (very fast & small)
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+    return model
 
 def embed_text(text: str):
-    """
-    Convert text into an embedding vector using a local model (no API needed).
-    """
     try:
-        embedding = model.encode(text).tolist()  # convert numpy → python list
+        embedding = get_model().encode(text).tolist()
         return embedding
     except Exception as e:
         print("Embedding Error:", repr(e))
