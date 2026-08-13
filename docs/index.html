@@ -402,13 +402,113 @@
 
     .quiz-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .quiz-actions .btn { width: auto; padding: 10px 24px; }
+
+    /* ── Auth overlay ── */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .auth-logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent-g);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: all 0.2s;
+    }
+    .auth-tab.active { color: var(--accent-g); border-bottom-color: var(--accent-g); }
+    .auth-field {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color 0.2s;
+    }
+    .auth-field:focus { border-color: var(--accent); }
+    .auth-field::placeholder { color: var(--muted); }
+    .auth-error {
+      font-size: 0.8rem;
+      color: var(--danger);
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+    .user-chip {
+      font-size: 0.75rem;
+      color: var(--muted);
+      padding: 0 4px;
+      margin-top: -8px;
+    }
+    .user-chip span { color: var(--accent-g); font-weight: 600; }
   </style>
 </head>
 <body>
 
+<!-- ── Auth overlay ── -->
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-logo">📚 Study Agent</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <div id="authLogin">
+      <input class="auth-field" type="text" id="loginUser" placeholder="Username" />
+      <input class="auth-field" type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+      <div class="auth-error" id="loginError"></div>
+      <button class="btn btn-primary" onclick="doLogin()">Login</button>
+    </div>
+
+    <div id="authSignup" style="display:none">
+      <input class="auth-field" type="text" id="signupUser" placeholder="Username (min 3 chars)" />
+      <input class="auth-field" type="password" id="signupPass" placeholder="Password (min 6 chars)" onkeydown="if(event.key==='Enter')doSignup()" />
+      <div class="auth-error" id="signupError"></div>
+      <button class="btn btn-primary" onclick="doSignup()">Create Account</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Sidebar ── -->
 <aside class="sidebar">
   <div class="logo"><span>📚</span> Study Agent</div>
+  <div class="user-chip" id="userChip"></div>
 
   <div>
     <p class="section-label">Upload Document</p>
@@ -436,6 +536,7 @@
   <hr class="divider" />
 
   <button class="btn btn-ghost" onclick="clearChat()">🗑 Clear Chat</button>
+  <button class="btn btn-ghost" onclick="logout()" style="color:var(--danger);border-color:var(--danger);opacity:0.7;">↩ Logout</button>
 </aside>
 
 <!-- ── Main ── -->
@@ -476,14 +577,87 @@
 
 <script>
   const API = 'https://study-agent-backend-5o1i.onrender.com/api';
+  const AUTH_API = 'https://study-agent-backend-5o1i.onrender.com/api/auth';
   let history = [];
   let docFilter = null;
   let selectedFile = null;
   let quizData = [];
   let quizSubmitted = false;
 
+  // ── Auth ──
+  function switchAuthTab(tab) {
+    document.getElementById('authLogin').style.display  = tab === 'login'  ? 'block' : 'none';
+    document.getElementById('authSignup').style.display = tab === 'signup' ? 'block' : 'none';
+    document.getElementById('tabLogin').classList.toggle('active',  tab === 'login');
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  }
+
+  async function doLogin() {
+    const username = document.getElementById('loginUser').value.trim();
+    const password = document.getElementById('loginPass').value;
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '';
+    if (!username || !password) { errEl.textContent = 'Enter username and password'; return; }
+    try {
+      const res = await fetch(`${AUTH_API}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.detail || 'Login failed'; return; }
+      localStorage.setItem('study_token', data.token);
+      localStorage.setItem('study_user', data.username);
+      showApp(data.username);
+    } catch(e) {
+      errEl.textContent = 'Cannot connect to backend';
+    }
+  }
+
+  async function doSignup() {
+    const username = document.getElementById('signupUser').value.trim();
+    const password = document.getElementById('signupPass').value;
+    const errEl = document.getElementById('signupError');
+    errEl.textContent = '';
+    if (!username || !password) { errEl.textContent = 'Enter username and password'; return; }
+    try {
+      const res = await fetch(`${AUTH_API}/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.detail || 'Signup failed'; return; }
+      localStorage.setItem('study_token', data.token);
+      localStorage.setItem('study_user', data.username);
+      showApp(data.username);
+    } catch(e) {
+      errEl.textContent = 'Cannot connect to backend';
+    }
+  }
+
+  function showApp(username) {
+    document.getElementById('authOverlay').style.display = 'none';
+    document.getElementById('userChip').innerHTML = `Logged in as <span>${username}</span>`;
+    loadDocuments();
+  }
+
+  function logout() {
+    localStorage.removeItem('study_token');
+    localStorage.removeItem('study_user');
+    location.reload();
+  }
+
   // ── Init ──
-  window.onload = () => { loadDocuments(); };
+  window.onload = () => {
+    const token = localStorage.getItem('study_token');
+    const user  = localStorage.getItem('study_user');
+    if (token && user) {
+      showApp(user);
+    } else {
+      document.getElementById('authOverlay').style.display = 'flex';
+    }
+  };
 
   async function loadDocuments() {
     try {

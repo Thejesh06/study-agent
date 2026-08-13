@@ -8,3 +8,6 @@ fastembed
 groq
 pypdf
 python-multipart
+pymongo
+PyJWT
+bcrypt
