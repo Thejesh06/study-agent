@@ -20,20 +20,21 @@ def _save(documents: List[dict]) -> None:
         json.dump(documents, f)
 
 
-def add_document(doc_id: str, text: str, embedding: List[float]) -> None:
+def add_document(doc_id: str, text: str, embedding: List[float], user: str = "default") -> None:
     documents = _load()
     documents = [d for d in documents if d["id"] != doc_id]
-    documents.append({"id": doc_id, "text": text, "embedding": embedding})
+    documents.append({"id": doc_id, "text": text, "embedding": embedding, "user": user})
     _save(documents)
 
 
-def list_documents() -> List[str]:
+def list_documents(user: Optional[str] = None) -> List[str]:
     """Return unique document names (filenames) stored in the vector store."""
     documents = _load()
+    if user:
+        documents = [d for d in documents if d.get("user") == user]
     seen = set()
     names = []
     for d in documents:
-        # chunk IDs look like: filename_chunk_0_abc123
         doc_name = d["id"].split("_chunk_")[0]
         if doc_name not in seen:
             seen.add(doc_name)
@@ -50,9 +51,11 @@ def _cosine_similarity(a: List[float], b: List[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def get_chunks(doc_filter: Optional[str] = None) -> List[dict]:
-    """Return all stored chunks, optionally filtered by document."""
+def get_chunks(doc_filter: Optional[str] = None, user: Optional[str] = None) -> List[dict]:
+    """Return all stored chunks, optionally filtered by document and user."""
     documents = _load()
+    if user:
+        documents = [d for d in documents if d.get("user") == user]
     if doc_filter:
         documents = [d for d in documents if d["id"].startswith(doc_filter)]
     return documents
@@ -62,13 +65,16 @@ def search_similar(
     query_embedding: List[float],
     top_k: int = 5,
     doc_filter: Optional[str] = None,
+    user: Optional[str] = None,
 ) -> List[dict]:
     """
     Return top_k most similar chunks.
-    If doc_filter is set, only search within that document's chunks.
+    Filtered by user and optionally by document.
     """
     documents = _load()
 
+    if user:
+        documents = [d for d in documents if d.get("user") == user]
     if doc_filter:
         documents = [d for d in documents if d["id"].startswith(doc_filter)]
 

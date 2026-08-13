@@ -1,6 +1,7 @@
 # backend/routes/api.py
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from backend.auth import get_current_user
 import pypdf
 import io
 import uuid
@@ -28,14 +29,12 @@ def ping():
 
 
 @router.get("/documents")
-def get_documents():
-    """Return the list of document names currently stored."""
-    return {"documents": list_documents()}
+def get_documents(current_user: str = Depends(get_current_user)):
+    return {"documents": list_documents(user=current_user)}
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    """Accept a PDF or .txt file, chunk it, embed each chunk, and store it."""
+async def upload_file(file: UploadFile = File(...), current_user: str = Depends(get_current_user)):
     filename = file.filename or "unknown"
     content = await file.read()
 
@@ -62,14 +61,14 @@ async def upload_file(file: UploadFile = File(...)):
         if embedding is None:
             continue
         chunk_id = f"{doc_base_id}_chunk_{i}_{uuid.uuid4().hex[:6]}"
-        add_document(chunk_id, chunk, embedding)
+        add_document(chunk_id, chunk, embedding, user=current_user)
         stored += 1
 
     return {"status": "uploaded", "filename": filename, "chunks_stored": stored}
 
 
 @router.post("/query")
-def query_rag(data: dict):
+def query_rag(data: dict, current_user: str = Depends(get_current_user)):
     """
     RAG pipeline with conversation history and optional document filter.
     Expects:
@@ -90,7 +89,7 @@ def query_rag(data: dict):
     if query_embedding is None:
         raise HTTPException(status_code=500, detail="Embedding failed")
 
-    results = search_similar(query_embedding, top_k=top_k, doc_filter=doc_filter)
+    results = search_similar(query_embedding, top_k=top_k, doc_filter=doc_filter, user=current_user)
 
     # Build context block from retrieved chunks
     if results:
@@ -123,7 +122,7 @@ def query_rag(data: dict):
 
 
 @router.post("/quiz")
-def generate_quiz(data: dict):
+def generate_quiz(data: dict, current_user: str = Depends(get_current_user)):
     """
     Generate multiple choice questions from an uploaded document.
     Expects:
@@ -134,7 +133,7 @@ def generate_quiz(data: dict):
     doc_filter = data.get("doc_filter") or None
     num_questions = min(int(data.get("num_questions", 5)), 10)
 
-    chunks = get_chunks(doc_filter=doc_filter)
+    chunks = get_chunks(doc_filter=doc_filter, user=current_user)
     if not chunks:
         raise HTTPException(status_code=400, detail="No documents found. Please upload a document first.")
 

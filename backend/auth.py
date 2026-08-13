@@ -4,6 +4,7 @@ import bcrypt
 import jwt
 import os
 from datetime import datetime, timedelta, timezone
+from fastapi import Header, HTTPException
 
 JWT_SECRET = os.getenv("JWT_SECRET", "change-this-in-production")
 JWT_ALGORITHM = "HS256"
@@ -34,3 +35,13 @@ def verify_token(token: str):
         return None
     except jwt.InvalidTokenError:
         return None
+
+
+def get_current_user(authorization: str = Header(None)) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = authorization.split(" ")[1]
+    username = verify_token(token)
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return username

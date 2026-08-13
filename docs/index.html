@@ -659,9 +659,14 @@
     }
   };
 
+  function authHeaders() {
+    const token = localStorage.getItem('study_token');
+    return { 'Authorization': `Bearer ${token}` };
+  }
+
   async function loadDocuments() {
     try {
-      const res = await fetch(`${API}/documents`);
+      const res = await fetch(`${API}/documents`, { headers: authHeaders() });
       const data = await res.json();
       const sel = document.getElementById('docSelect');
       sel.innerHTML = '<option value="">All Documents</option>';
@@ -696,7 +701,7 @@
     form.append('file', selectedFile);
 
     try {
-      const res = await fetch(`${API}/upload`, { method: 'POST', body: form });
+      const res = await fetch(`${API}/upload`, { method: 'POST', body: form, headers: authHeaders() });
       const data = await res.json();
       if (res.ok) {
         toast.textContent = `✓ Indexed ${data.filename} — ${data.chunks_stored} chunks`;
@@ -788,7 +793,7 @@
     try {
       const res = await fetch(`${API}/query`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ question, history: history.slice(0,-1), doc_filter: docFilter, k: 5 })
       });
       const data = await res.json();
@@ -815,7 +820,7 @@
     try {
       const res = await fetch(`${API}/quiz`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ doc_filter: docFilter, num_questions: num })
       });
       const data = await res.json();
