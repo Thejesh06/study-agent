@@ -22,7 +22,7 @@ def ask_groq(messages: List[dict]) -> str:
     """
     try:
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="compound",
             messages=messages,
             max_tokens=1024,
             temperature=0.4,
