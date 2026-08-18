@@ -3,7 +3,7 @@
 from typing import List
 
 
-def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 150) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 500, overlap: int = 75) -> List[str]:
     """
     Split text into overlapping chunks.
     overlap ensures context isn't lost at chunk boundaries.

@@ -93,7 +93,7 @@ def query_rag(data: dict, current_user: str = Depends(get_current_user)):
 
     # Build context block from retrieved chunks
     if results:
-        context_parts = [f"[Excerpt {i+1}]\n{r['text']}" for i, r in enumerate(results)]
+        context_parts = [f"[Excerpt {i+1}]\n{r['text'][:400]}" for i, r in enumerate(results)]
         context_block = "\n\n".join(context_parts)
         context_note = f"Relevant excerpts from the document:\n\n{context_block}\n\n---\n"
     else:
