@@ -24,7 +24,7 @@ def ask_groq(messages: List[dict]) -> str:
         response = client.chat.completions.create(
             model="groq/compound",
             messages=messages,
-            max_tokens=1024,
+            max_tokens=512,
             temperature=0.4,
         )
         return response.choices[0].message.content

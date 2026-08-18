@@ -80,7 +80,7 @@ def query_rag(data: dict, current_user: str = Depends(get_current_user)):
     question = data.get("question")
     history = data.get("history", [])
     doc_filter = data.get("doc_filter") or None
-    top_k = data.get("k", 5)
+    top_k = data.get("k", 3)
 
     if not question:
         raise HTTPException(status_code=400, detail="Missing 'question' field")
@@ -102,8 +102,8 @@ def query_rag(data: dict, current_user: str = Depends(get_current_user)):
     # Build message list: system → history → context + question
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # Include recent conversation history (last 6 turns = 3 exchanges)
-    for turn in history[-6:]:
+    # Include recent conversation history (last 4 turns = 2 exchanges)
+    for turn in history[-4:]:
         if turn.get("role") in ("user", "assistant") and turn.get("content"):
             messages.append({"role": turn["role"], "content": turn["content"]})
 
