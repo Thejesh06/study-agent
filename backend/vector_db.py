@@ -28,18 +28,11 @@ def add_document(doc_id: str, text: str, embedding: List[float], user: str = "de
 
 
 def list_documents(user: Optional[str] = None) -> List[str]:
-    namespace = user or "default"
-    seen = set()
-    try:
-        for id_batch in _get_index().list(namespace=namespace):
-            if isinstance(id_batch, str):
-                id_batch = [id_batch]
-            for vid in id_batch:
-                if "_chunk_" in vid:
-                    seen.add(vid.split("_chunk_")[0])
-    except Exception as e:
-        print("list_documents error:", e)
-    return list(seen)
+    from backend.database import get_doc_registry
+    doc = get_doc_registry().find_one({"user": user})
+    if doc:
+        return doc.get("filenames", [])
+    return []
 
 
 def get_chunks(doc_filter: Optional[str] = None, user: Optional[str] = None) -> List[dict]:

@@ -19,3 +19,6 @@ def _get_client():
 
 def get_users():
     return _get_client()["study_agent"]["users"]
+
+def get_doc_registry():
+    return _get_client()["study_agent"]["documents"]

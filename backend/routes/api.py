@@ -13,6 +13,7 @@ from backend.llm import ask_groq
 from backend.embeddings import embed_text
 from backend.vector_db import add_document, search_similar, list_documents, get_chunks
 from backend.chunker import chunk_text
+from backend.database import get_doc_registry
 
 router = APIRouter()
 
@@ -63,6 +64,12 @@ async def upload_file(file: UploadFile = File(...), current_user: str = Depends(
         chunk_id = f"{doc_base_id}_chunk_{i}_{uuid.uuid4().hex[:6]}"
         add_document(chunk_id, chunk, embedding, user=current_user)
         stored += 1
+
+    get_doc_registry().update_one(
+        {"user": current_user},
+        {"$addToSet": {"filenames": filename}},
+        upsert=True
+    )
 
     return {"status": "uploaded", "filename": filename, "chunks_stored": stored}
 
