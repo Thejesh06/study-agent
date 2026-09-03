@@ -37,24 +37,23 @@ def list_documents(user: Optional[str] = None) -> List[str]:
 
 def get_chunks(doc_filter: Optional[str] = None, user: Optional[str] = None) -> List[dict]:
     namespace = user or "default"
-    prefix = (doc_filter.replace(" ", "_") + "_chunk_") if doc_filter else None
-    ids = []
-    for id_batch in _get_index().list(namespace=namespace, prefix=prefix):
-        if isinstance(id_batch, str):
-            ids.append(id_batch)
-        else:
-            ids.extend(id_batch)
+    filter_dict = None
+    if doc_filter:
+        filter_dict = {"filename": {"$eq": doc_filter.replace(" ", "_")}}
 
-    if not ids:
-        return []
-
-    chunks = []
-    for i in range(0, len(ids), 100):
-        batch = ids[i:i + 100]
-        result = _get_index().fetch(ids=batch, namespace=namespace)
-        for vid, vec in result.vectors.items():
-            chunks.append({"id": vid, "text": vec.metadata.get("text", "")})
-    return chunks
+    # dummy zero vector — order doesn't matter for quiz, we just need the chunks
+    dummy = [0.0] * 384
+    results = _get_index().query(
+        vector=dummy,
+        top_k=50,
+        filter=filter_dict,
+        include_metadata=True,
+        namespace=namespace
+    )
+    return [
+        {"id": m.id, "text": m.metadata.get("text", "")}
+        for m in results.matches
+    ]
 
 
 def search_similar(
