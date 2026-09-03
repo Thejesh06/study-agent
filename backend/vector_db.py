@@ -1,89 +1,80 @@
 # backend/vector_db.py
 
-import json
-import math
 import os
 from typing import List, Optional
+from pinecone import Pinecone
 
-STORE_PATH = "./vector_store.json"
-
-
-def _load() -> List[dict]:
-    if os.path.exists(STORE_PATH):
-        with open(STORE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+_index = None
 
 
-def _save(documents: List[dict]) -> None:
-    with open(STORE_PATH, "w", encoding="utf-8") as f:
-        json.dump(documents, f)
+def _get_index():
+    global _index
+    if _index is None:
+        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+        _index = pc.Index(os.getenv("PINECONE_INDEX", "study-agent"))
+    return _index
 
 
 def add_document(doc_id: str, text: str, embedding: List[float], user: str = "default") -> None:
-    documents = _load()
-    documents = [d for d in documents if d["id"] != doc_id]
-    documents.append({"id": doc_id, "text": text, "embedding": embedding, "user": user})
-    _save(documents)
+    filename = doc_id.split("_chunk_")[0]
+    _get_index().upsert(
+        vectors=[{
+            "id": doc_id,
+            "values": embedding,
+            "metadata": {"text": text, "filename": filename}
+        }],
+        namespace=user
+    )
 
 
 def list_documents(user: Optional[str] = None) -> List[str]:
-    """Return unique document names (filenames) stored in the vector store."""
-    documents = _load()
-    if user:
-        documents = [d for d in documents if d.get("user") == user]
+    namespace = user or "default"
     seen = set()
-    names = []
-    for d in documents:
-        doc_name = d["id"].split("_chunk_")[0]
-        if doc_name not in seen:
-            seen.add(doc_name)
-            names.append(doc_name)
-    return names
-
-
-def _cosine_similarity(a: List[float], b: List[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(y * y for y in b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
+    for id_batch in _get_index().list(namespace=namespace):
+        for vid in id_batch:
+            if "_chunk_" in vid:
+                seen.add(vid.split("_chunk_")[0])
+    return list(seen)
 
 
 def get_chunks(doc_filter: Optional[str] = None, user: Optional[str] = None) -> List[dict]:
-    """Return all stored chunks, optionally filtered by document and user."""
-    documents = _load()
-    if user:
-        documents = [d for d in documents if d.get("user") == user]
-    if doc_filter:
-        documents = [d for d in documents if d["id"].startswith(doc_filter)]
-    return documents
+    namespace = user or "default"
+    prefix = (doc_filter.replace(" ", "_") + "_chunk_") if doc_filter else None
+    ids = []
+    for id_batch in _get_index().list(namespace=namespace, prefix=prefix):
+        ids.extend(id_batch)
+
+    if not ids:
+        return []
+
+    chunks = []
+    for i in range(0, len(ids), 100):
+        batch = ids[i:i + 100]
+        result = _get_index().fetch(ids=batch, namespace=namespace)
+        for vid, vec in result.vectors.items():
+            chunks.append({"id": vid, "text": vec.metadata.get("text", "")})
+    return chunks
 
 
 def search_similar(
     query_embedding: List[float],
-    top_k: int = 5,
+    top_k: int = 3,
     doc_filter: Optional[str] = None,
     user: Optional[str] = None,
 ) -> List[dict]:
-    """
-    Return top_k most similar chunks.
-    Filtered by user and optionally by document.
-    """
-    documents = _load()
-
-    if user:
-        documents = [d for d in documents if d.get("user") == user]
+    namespace = user or "default"
+    filter_dict = None
     if doc_filter:
-        documents = [d for d in documents if d["id"].startswith(doc_filter)]
+        filter_dict = {"filename": {"$eq": doc_filter.replace(" ", "_")}}
 
-    scored = [
-        (_cosine_similarity(query_embedding, d["embedding"]), d)
-        for d in documents
-    ]
-    scored.sort(key=lambda x: x[0], reverse=True)
+    results = _get_index().query(
+        vector=query_embedding,
+        top_k=top_k,
+        filter=filter_dict,
+        include_metadata=True,
+        namespace=namespace
+    )
     return [
-        {"id": d["id"], "text": d["text"], "score": round(score, 4)}
-        for score, d in scored[:top_k]
+        {"id": m.id, "text": m.metadata.get("text", ""), "score": round(m.score, 4)}
+        for m in results.matches
     ]
