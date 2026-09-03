@@ -30,7 +30,7 @@ PDF / TXT
 [Embedder] — converts each chunk to a vector (all-MiniLM-L6-v2, runs locally)
    │
    ▼
-[Vector Store] — saves chunks + embeddings to disk (JSON)
+[Vector Store] — saves chunks + embeddings to disk (PinCone)
    │
    ▼  (on query)
 [Retriever] — embeds the question, finds top-5 most similar chunks via cosine similarity
@@ -50,7 +50,7 @@ PDF / TXT
 | LLM | Groq API (LLaMA 3.3 70B Versatile) |
 | Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (local, no API needed) |
 | PDF Parsing | pypdf |
-| Vector Storage | JSON file (persistent, no external DB) |
+| Vector Storage | Pincone |
 
 ---
 
@@ -62,7 +62,7 @@ study-agent/
 │   ├── app.py          # FastAPI app, CORS, router
 │   ├── llm.py          # Groq client, multi-turn chat
 │   ├── embeddings.py   # Local sentence-transformer model
-│   ├── vector_db.py    # Persistent vector store (JSON)
+│   ├── vector_db.py    # Persistent vector store (Pincone)
 │   ├── chunker.py      # Text splitting with overlap
 │   └── routes/
 │       └── api.py      # All API endpoints
